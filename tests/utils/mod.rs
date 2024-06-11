@@ -67,9 +67,10 @@ pub use rgb::{
     invoice::Pay2Vout, persistence::Stock, resolvers::AnyResolver, stl::ContractTerms,
     BlindingFactor, DescriptorRgb, GenesisSeal, GraphSeal, Identity, RgbDescr, RgbKeychain,
     RgbWallet, TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XOutputSeal,
+    XWitnessId, XWitnessTx,
 };
 pub use rgbstd::{
-    containers::{BuilderSeal, Fascia, FileContent, Kit, Transfer, ValidKit},
+    containers::{BuilderSeal, Fascia, FileContent, Kit, Transfer, ValidKit, XPubWitness},
     interface::{
         ContractBuilder, ContractIface, DataAllocation, FilterExclude, FungibleAllocation, Iface,
         IfaceClass, IfaceId, IfaceImpl, NamedField,
@@ -80,7 +81,7 @@ pub use rgbstd::{
     stl::{
         AssetSpec, Attachment, Details, MediaType, Name, ProofOfReserves, RicardianContract, Ticker,
     },
-    validation::{Scripts, Validity},
+    validation::{Failure, ResolveWitness, Scripts, Validity, WitnessResolverError},
     Allocation, Amount, ContractId, GlobalStateType, Layer1, Operation, OwnedFraction, Precision,
     Schema, TokenIndex, TxoSeal, XChain,
 };

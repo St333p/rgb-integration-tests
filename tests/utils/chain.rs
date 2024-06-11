@@ -219,7 +219,7 @@ fn _wait_indexer_sync() {
 
 pub fn send_to_address(address: String, sats: Option<u64>) -> String {
     let sats = Sats::from_sats(sats.unwrap_or(100_000_000));
-    let btc = format!("{}.{}", sats.btc_floor(), sats.sats_rem());
+    let btc = format!("{}.{:0>8}", sats.btc_floor(), sats.sats_rem());
     let output = Command::new("docker")
         .stdin(Stdio::null())
         .arg("compose")

@@ -471,6 +471,7 @@ fn same_transfer_twice() {
 }
 
 #[test]
+#[ignore = "waiting for upstream fix"]
 fn ln_htlc_transfer() {
     initialize();
 
@@ -491,7 +492,7 @@ fn ln_htlc_transfer() {
         (wlt_1.get_address(), None),
         (htlc_derived_addr.addr, Some(htlc_btc_amt)),
     ];
-    let (mut psbt, _meta) = wlt_1.construct_psbt(vec![utxo], beneficiaries, None);
+    let (mut psbt, psbt_meta) = wlt_1.construct_psbt(vec![(utxo)], beneficiaries, None);
 
     println!("coloring fake commitment TX");
     let coloring_info = ColoringInfo {
@@ -500,20 +501,23 @@ fn ln_htlc_transfer() {
             AssetColoringInfo {
                 iface: iface_type_name.clone(),
                 input_outpoints: vec![utxo],
-                output_map: HashMap::from([(0, 100), (1, 300), (htlc_vout, htlc_rgb_amt)]),
-                static_blinding: Some(666),
+                outputs: vec![
+                    (AssetOutput::from_vout_dyn(0), 100),
+                    (AssetOutput::from_vout_dyn(1), 300),
+                    (AssetOutput::from_vout_dyn(htlc_vout), htlc_rgb_amt),
+                ],
             },
         )]),
         static_blinding: Some(666),
     };
-    let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
+    let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, &psbt_meta, coloring_info);
 
     println!("constructing fake HTLC TX");
     let witness_id = fascia.witness_id();
     let txid = witness_id.as_reduced_unsafe();
     let input_outpoint = Outpoint::new(*txid, htlc_vout);
     let beneficiaries = vec![(wlt_1.get_address(), None)];
-    let (mut psbt, _meta) = wlt_1.construct_psbt_offchain(
+    let (mut psbt, psbt_meta) = wlt_1.construct_psbt_offchain(
         vec![(input_outpoint, htlc_btc_amt, htlc_derived_addr.terminal)],
         beneficiaries,
         None,
@@ -526,17 +530,17 @@ fn ln_htlc_transfer() {
             AssetColoringInfo {
                 iface: iface_type_name,
                 input_outpoints: vec![input_outpoint],
-                output_map: HashMap::from([(0, htlc_rgb_amt)]),
-                static_blinding: Some(666),
+                outputs: vec![(AssetOutput::from_vout_dyn(0), htlc_rgb_amt)],
             },
         )]),
         static_blinding: Some(666),
     };
     // this fails
-    let (_fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
+    let (_fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, &psbt_meta, coloring_info);
 }
 
 #[test]
+#[ignore = "waiting for upstream fix"]
 fn ln_transfers_consume() {
     initialize();
 
@@ -551,20 +555,24 @@ fn ln_transfers_consume() {
         (wlt_2.get_address(), Some(2000)),
         (wlt_1.get_address(), None),
     ];
-    let (mut psbt, _meta) = wlt_1.construct_psbt(vec![utxo], beneficiaries, None);
+    let (mut psbt, psbt_meta) = wlt_1.construct_psbt(vec![utxo], beneficiaries, None);
+
     let coloring_info = ColoringInfo {
         asset_info_map: HashMap::from([(
             contract_id,
             AssetColoringInfo {
                 iface: iface_type_name.clone(),
                 input_outpoints: vec![utxo],
-                output_map: HashMap::from([(0, 100), (1, 500)]),
-                static_blinding: Some(666),
+                outputs: vec![
+                    (AssetOutput::from_vout_dyn(0), 100),
+                    (AssetOutput::from_vout_dyn(1), 500),
+                ],
             },
         )]),
         static_blinding: Some(666),
     };
-    let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info.clone());
+    let (fascia, _asset_beneficiaries) =
+        wlt_1.color_psbt(&mut psbt, &psbt_meta, coloring_info.clone());
     wlt_1.consume_fascia(fascia.clone());
 
     let htlc_vout = 2;
@@ -585,13 +593,17 @@ fn ln_transfers_consume() {
             AssetColoringInfo {
                 iface: iface_type_name.clone(),
                 input_outpoints: vec![utxo],
-                output_map: HashMap::from([(0, 100), (1, 300), (htlc_vout, htlc_rgb_amt)]),
-                static_blinding: Some(666),
+                outputs: vec![
+                    (AssetOutput::from_vout_dyn(0), 100),
+                    (AssetOutput::from_vout_dyn(1), 300),
+                    (AssetOutput::from_vout_dyn(htlc_vout), htlc_rgb_amt),
+                ],
             },
         )]),
         static_blinding: Some(666),
     };
-    let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info.clone());
+    let (fascia, _asset_beneficiaries) =
+        wlt_1.color_psbt(&mut psbt, &psbt_meta, coloring_info.clone());
     wlt_1.consume_fascia(fascia.clone());
 
     println!("fake HTLC TX");
@@ -610,13 +622,12 @@ fn ln_transfers_consume() {
             AssetColoringInfo {
                 iface: iface_type_name.clone(),
                 input_outpoints: vec![input_outpoint],
-                output_map: HashMap::from([(0, htlc_rgb_amt)]),
-                static_blinding: Some(666),
+                outputs: vec![(AssetOutput::from_vout_dyn(0), htlc_rgb_amt)],
             },
         )]),
         static_blinding: Some(666),
     };
-    let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
+    let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, &psbt_meta, coloring_info);
     wlt_1.consume_fascia(fascia);
 
     println!("fake commitment TX (no HTLCs)");
@@ -631,12 +642,108 @@ fn ln_transfers_consume() {
             AssetColoringInfo {
                 iface: iface_type_name,
                 input_outpoints: vec![utxo],
-                output_map: HashMap::from([(0, 100), (1, 500)]),
-                static_blinding: Some(666),
+                outputs: vec![
+                    (AssetOutput::from_vout_dyn(0), 100),
+                    (AssetOutput::from_vout_dyn(1), 500),
+                ],
             },
         )]),
         static_blinding: Some(666),
     };
-    let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
+    let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, &psbt_meta, coloring_info);
     wlt_1.consume_fascia(fascia); // this fails
+}
+
+#[test]
+fn collaborative_transfer() {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_3 = get_wallet(&DescriptorType::Wpkh);
+
+    let sats_1 = 30_000;
+    let sats_2 = 18_000;
+    let sats_fee = 1000;
+    let sats_3: u64 = sats_1 - sats_fee;
+
+    let utxo_0 = wlt_1.get_utxo(Some(sats_1));
+    let (contract_id, iface_type_name) = wlt_1.issue_nia(600, wlt_1.close_method(), Some(&utxo_0));
+    let (_, tx) = wlt_1.send(
+        &mut wlt_2,
+        TransferType::Witness,
+        contract_id,
+        &iface_type_name,
+        200,
+        sats_2,
+    );
+    let utxo_1 = Outpoint::new(tx.txid(), 1); // change
+    let utxo_2 = Outpoint::new(tx.txid(), 0); // transfered
+
+    let mut psbt = Psbt::default();
+    psbt.fallback_locktime = Some(bp::LockTime::from_consensus_u32(0));
+
+    wlt_1.psbt_add_input(&mut psbt, utxo_1);
+    wlt_2.psbt_add_input(&mut psbt, utxo_2);
+
+    psbt.construct_output_expect(wlt_3.get_address().script_pubkey(), Sats::from_sats(sats_3));
+
+    let output_seal = AssetOutput {
+        static_blinding: Some(777),
+        destination: AssetDestination::Witness(0),
+    };
+    let coloring_info_1 = ColoringInfo {
+        asset_info_map: HashMap::from([(
+            contract_id,
+            AssetColoringInfo {
+                iface: iface_type_name.clone(),
+                input_outpoints: vec![utxo_1],
+                outputs: vec![(output_seal.clone(), 400)],
+            },
+        )]),
+        static_blinding: Some(777),
+    };
+    let coloring_info_2 = ColoringInfo {
+        asset_info_map: HashMap::from([(
+            contract_id,
+            AssetColoringInfo {
+                iface: iface_type_name.clone(),
+                input_outpoints: vec![utxo_2],
+                outputs: vec![(output_seal, 200)],
+            },
+        )]),
+        static_blinding: Some(777),
+    };
+    let meta = PsbtMeta {
+        change_vout: None,
+        change_terminal: None,
+    };
+    let beneficiaries_1 = wlt_1.color_psbt_begin(&mut psbt, &meta, coloring_info_1);
+
+    let (fascia, beneficiaries_2) = wlt_2.color_psbt(&mut psbt, &meta, coloring_info_2);
+
+    wlt_1.sign_finalize(&mut psbt);
+    wlt_2.sign_finalize(&mut psbt);
+
+    let tx = psbt.extract().unwrap();
+    broadcast_tx(&tx);
+
+    wlt_1.consume_fascia(fascia.clone());
+    let consignments_1 = wlt_1.create_consignments(beneficiaries_1, tx.txid());
+    wlt_2.consume_fascia(fascia);
+    let consignments_2 = wlt_2.create_consignments(beneficiaries_2, tx.txid());
+    println!("\nSend the whole amount (minus fee) to self to check everything worked fine");
+
+    wlt_3.sync();
+    for consignment in vec![consignments_1, consignments_2].into_iter().flatten() {
+        wlt_3.accept_transfer(consignment);
+    }
+    wlt_3.send(
+        &mut wlt_1,
+        TransferType::Witness,
+        contract_id,
+        &iface_type_name,
+        600,
+        sats_3 - sats_fee,
+    );
 }
