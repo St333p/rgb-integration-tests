@@ -823,7 +823,9 @@ impl TestWallet {
                 for allocation in allocations {
                     println!(
                         "    amount={}, utxo={}, witness={} # owned by the wallet",
-                        allocation.state, allocation.seal, allocation.witness
+                        allocation.state.value(),
+                        allocation.seal,
+                        allocation.witness
                     );
                 }
             }
@@ -834,7 +836,9 @@ impl TestWallet {
                 for allocation in allocations {
                     println!(
                         "    amount={}, utxo={}, witness={} # owner unknown",
-                        allocation.state, allocation.seal, allocation.witness
+                        allocation.state.value(),
+                        allocation.seal,
+                        allocation.witness
                     );
                 }
             }

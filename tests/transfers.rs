@@ -738,6 +738,7 @@ fn collaborative_transfer() {
     for consignment in vec![consignments_1, consignments_2].into_iter().flatten() {
         wlt_3.accept_transfer(consignment);
     }
+    wlt_3.debug_logs(contract_id, &iface_type_name);
     wlt_3.send(
         &mut wlt_1,
         TransferType::Witness,
